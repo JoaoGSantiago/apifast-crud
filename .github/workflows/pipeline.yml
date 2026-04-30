@@ -8,7 +8,7 @@ on:
 
 jobs:
   dependency-audit:
-    name: Análise de dependências
+    name: dependency-audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +19,7 @@ jobs:
       - run: pip-audit -r requirements.lock
 
   build-and-scan:
-    name: Build e Scan
+    name: build-and-scan
     runs-on: ubuntu-latest
     needs: dependency-audit
     steps:
