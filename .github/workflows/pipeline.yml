@@ -24,12 +24,14 @@ jobs:
     needs: dependency-audit
     steps:
       - uses: actions/checkout@v4
+      - name: Set short SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::10}" >> $GITHUB_ENV
       
       - name: Build
-        run: docker build -t minha-api:${{ github.sha }} .
+        run: docker build -t minha-api:${{ env.SHORT_SHA }} .
 
       - name: Save image
-        run: docker save minha-api:${{ github.sha }} -o image.tar
+        run: docker save minha-api:${{ env.SHORT_SHA }} -o image.tar
 
       - uses: actions/upload-artifact@v4
         with:
@@ -38,7 +40,8 @@ jobs:
       - name: Scan Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
-          image-ref: minha-api:${{ github.sha }}
+          version: v0.70.0
+          image-ref: minha-api:${{ env.SHORT_SHA }}
           severity: CRITICAL,HIGH
           exit-code: "1"
           ignore-unfixed: true
@@ -54,18 +57,20 @@ jobs:
         with:
           name: image
       - run: docker load -i image.tar
+      - name: Set short SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::10}" >> $GITHUB_ENV
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
       - run: |
-          docker tag minha-api:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:latest
-          docker tag minha-api:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:${{ github.sha }}
+          docker tag minha-api:${{ env.SHORT_SHA }} ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:latest
+          docker tag minha-api:${{ env.SHORT_SHA }} ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:${{ env.SHORT_SHA }}
 
       - run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:${{ env.SHORT_SHA }}
 
 
   push-dev:
@@ -78,15 +83,17 @@ jobs:
         with:
           name: image
       - run: docker load -i image.tar
+      - name: Set short SHA
+        run: echo "SHORT_SHA=${GITHUB_SHA::10}" >> $GITHUB_ENV
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
       - run: |
-          docker tag minha-api:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:dev
-          docker tag minha-api:${{ github.sha }} ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:${{ github.sha }}
+          docker tag minha-api:${{ env.SHORT_SHA }} ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:dev
+          docker tag minha-api:${{ env.SHORT_SHA }} ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:${{ env.SHORT_SHA }}
 
       - run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:dev
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/minha-api:${{ env.SHORT_SHA }}
