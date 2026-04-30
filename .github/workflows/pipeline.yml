@@ -17,7 +17,7 @@ jobs:
 
       - run: pip install pip-audit
 
-      - run: pip-audit -r requirements.txt
+      - run: pip-audit -r requirements.lock
 
   build:
     name: Build da imagem
