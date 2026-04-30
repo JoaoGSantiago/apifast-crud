@@ -4,7 +4,10 @@ import uvicorn
 
 
 def run_migrations() -> None:
-    result = subprocess.run(["alembic", "upgrade", "head"], check=False)
+    result = subprocess.run(
+        [sys.executable, "-m", "alembic", "upgrade", "head"],
+        check=False,
+    )
     if result.returncode != 0:
         print("falha ao rodar as migrations.", file=sys.stderr)
         sys.exit(result.returncode)
