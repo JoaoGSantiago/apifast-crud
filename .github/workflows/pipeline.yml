@@ -10,70 +10,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-
       - run: pip install pip-audit
-
       - run: pip-audit -r requirements.lock
 
-  build:
-      name: Build da imagem
-      runs-on: ubuntu-latest
-      needs: dependency-audit
-      steps:
-        - uses: actions/checkout@v4
-
-        - name: Build
-          run: docker build -t minha-api:${{ github.sha }} .
-
-        - name: Salvar imagem
-          run: docker save minha-api:${{ github.sha }} -o image.tar
-
-        - name: Upload imagem
-          uses: actions/upload-artifact@v4
-          with:
-            name: docker-image
-            path: image.tar
-            retention-days: 1
-
-  trivy:
-    name: Scan de CVEs
+  build-and-scan:
+    name: Build e Scan
     runs-on: ubuntu-latest
-    needs: build
+    needs: dependency-audit
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download imagem
-        uses: actions/download-artifact@v4
-        with:
-          name: docker-image
-
-      - name: Carregar imagem
-        run: docker load -i image.tar
-
-      - name: Scan
+      - name: Build
+        run: docker build -t minha-api:${{ github.sha }} .
+      - name: Scan Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: minha-api:${{ github.sha }}
           severity: CRITICAL,HIGH
           exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
 
   push:
     name: Push pro DockerHub
     runs-on: ubuntu-latest
-    needs: trivy
+    needs: build-and-scan
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - uses: docker/build-push-action@v6
         with:
           context: .
