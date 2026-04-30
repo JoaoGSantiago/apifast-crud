@@ -1,10 +1,9 @@
 services:
   app:
     build: .
+    image: api-fastapi
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
     environment:
       - SECRET_KEY=${SECRET_KEY:-seu-secret-key}
     restart: unless-stopped
